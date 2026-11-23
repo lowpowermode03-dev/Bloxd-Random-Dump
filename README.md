@@ -1,1 +1,116 @@
-# Bloxd-Random-Dump
+# Bloxd Codex
+
+An unofficial, dependency-free field guide to **Bloxd**, built from scratch on top of the
+archived `Bloxd-Developer-Hub 9.zip` snapshot kept in this repository.
+
+> Every block. Every item. One codex.
+
+The site is a static, hash-routed web app (plain HTML, CSS and ES modules) with its data
+generated straight out of the zip: **10,080 registry entries**, **10,068 textures**,
+**59 mobs** and **142 mob variations**, plus the extraction monitor's snapshot metadata and
+changelogs.
+
+## What is in the box
+
+| Page | What it does |
+| --- | --- |
+| **Codex** | Search and filter all 10,080 entries by kind, shelf, harvest type, harvest level and properties. Cards link to full records with grouped properties and raw JSON. |
+| **Entry** | A dedicated page per registry ID: large pixel texture, badges, mining/combat/tool/armour/food properties, collapsible nested values, raw JSON, previous/next and related entries. |
+| **Textures** | The full texture wall — all 10,068 sprites, filterable by kind and canvas size, lazily streamed, with a lightbox that previews at high zoom and downloads a cropped PNG. |
+| **Mobs** | 59 mobs, their variations, caught-mob sprites, spawner blocks and spawn orbs. |
+| **Lab** | Two calculators wired to real registry values: a break-time calculator (block × tool, with every alternative ranked) and a time-to-KO calculator (damage × armour reduction). Plus an ID finder. |
+| **Archive** | Provenance, environment build fingerprints, the latest extraction diff, update history, and downloadable raw JSON/changelogs. |
+| Anywhere | ⌘K / Ctrl-K command palette, deep links for every entry, responsive layouts, reduced-motion support. |
+
+## Run locally
+
+```bash
+node serve.mjs          # http://localhost:8080
+# or
+python3 -m http.server 8000
+```
+
+Serve the folder over HTTP — opening `index.html` with a `file://` URL will block the JSON
+and texture fetches. `serve.mjs` is a zero-dependency static server with gzip and deep-link
+fallback; `PORT=3000 node serve.mjs` changes the port.
+
+## Deploy
+
+Any static host works because all paths are relative.
+
+* **Vercel** — import the repository, leave the framework as *Other*, build command empty.
+  `vercel.json` already sets the root as output and adds cache headers.
+* **GitHub Pages / Netlify / Cloudflare Pages** — publish the repository root.
+
+## Rebuilding the datasets
+
+```bash
+pip install pillow
+python3 tools/build_site.py
+```
+
+The builder reads `Bloxd-Developer-Hub 9.zip` directly and rewrites `data/` and `media/`.
+It is the single source of truth — no other repository needs to be present.
+
+What it produces:
+
+* `data/entries.json` — a compact, single-request search index (1.15 MB) with short keys.
+* `data/details/*.json` — the untouched full registry records, sharded eight ways so a
+  detail page only fetches ~600 KB.
+* `data/mobs.json` — mobs and variations resolved to texture tiles.
+* `data/meta.json` — counts, environment builds, changelog digests, atlas manifest.
+* `data/changelogs/*.md` — the original extracted changelogs.
+* `media/atlas/*.png` — every texture packed into 13 atlases, one per native canvas size,
+  with identical images deduplicated (10,068 source files → 2,392 unique images).
+  Packing keeps HTTP requests low and file counts manageable; a uniform canvas size per
+  sheet means the frontend can scale a whole sheet by one factor without blurring.
+* `media/tex/*.png` — the handful of textures with a canvas size unique enough to be
+  stored on their own.
+
+## Project layout
+
+```text
+.
+├── index.html               app shell (header, footer, palette, lightbox, modal)
+├── assets/
+│   ├── site.css             design system + every component
+│   ├── favicon.svg
+│   └── js/
+│       ├── main.js          router, header behaviour, global shortcuts
+│       ├── data.js          data loading, categories, search, sorting
+│       ├── texture.js       pixel-perfect atlas rendering, downloads, lightbox
+│       ├── combo.js         searchable dropdown used by the lab
+│       ├── palette.js       ⌘K command palette
+│       ├── ui.js            overlays, modals, toasts
+│       ├── util.js          formatting, labels, clipboard, misc helpers
+│       └── views/           home, codex, entry, textures, mobs, lab, archive
+├── data/                    generated datasets (committed)
+├── media/                   generated atlases and one-off textures (committed)
+├── tools/build_site.py      zip → site data pipeline
+├── serve.mjs                local static server
+├── vercel.json
+└── Bloxd-Developer-Hub 9.zip  the archived research snapshot
+```
+
+## Data provenance
+
+* Registry read from the archived `Bloxd-Entries-Data` extraction, captured from build
+  `vjxd5n.542dd0f9` and last checked on **2026-11-16** (UTC).
+* Environment metadata from the archived `Bloxd-Build-Monitor` snapshot
+  (`bloxd.io`, `preprod.bloxd.io`, `staging.bloxd.io` — all reporting the same build).
+* Latest extracted diff: 9,602 → 10,080 entries on 2026-11-12 — 478 added, 0 removed,
+  1,492 IDs moved.
+
+## Known limitations
+
+* This is a static snapshot, not a live API or game client.
+* Mob health, damage and movement statistics are **not** part of this extraction, so the
+  mob pages do not invent them.
+* Some mob variations share a single greyscale sprite that the game tints at runtime.
+* Lab results are arithmetic on registry values (`ttb ÷ multiplier`,
+  `damage × (1 − reduction)`); movement, latency, enchantments and multi-piece armour
+  formulas are not modelled.
+* The original hub's archived JavaScript/CSS game bundles are not shipped in this edition;
+  this site focuses on registry data, textures, mobs and changelogs.
+* Textures and game data remain the property of their respective creators. This is an
+  unofficial research project, not affiliated with or endorsed by Bloxd.
