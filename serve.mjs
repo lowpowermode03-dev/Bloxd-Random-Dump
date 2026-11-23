@@ -10,9 +10,10 @@
  */
 
 import http from "node:http";
-import { promises as fs, createReadStream } from "node:fs";
+import { promises as fs } from "node:fs";
 import { extname, join, normalize, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
+import { startScanner, snapshot, scanNow, SCAN_CONFIG } from "./scan.mjs";
 
 const ROOT = resolve(new URL(".", import.meta.url).pathname);
 const PORT = Number(process.env.PORT || 8080);
@@ -38,14 +39,27 @@ const MIME = {
 const FONT_EXT = new Set([".woff2", ".woff"]);
 
 const COMPRESSIBLE = new Set([".html", ".js", ".mjs", ".css", ".json", ".md", ".svg", ".txt"]);
+const API_HEADERS = {
+  "Content-Type": "application/json; charset=utf-8",
+  "Cache-Control": "no-store",
+  "X-Content-Type-Options": "nosniff",
+};
+
+function sendJSON(res, status, payload, { head = false } = {}) {
+  const body = Buffer.from(JSON.stringify(payload));
+  res.writeHead(status, { ...API_HEADERS, "Content-Length": body.length });
+  res.end(head ? undefined : body);
+}
+
 const gzipCache = new Map();
 
-async function readFileWithGzip(path, ext, acceptsGzip) {
+async function readFileWithGzip(path, ext, acceptsGzip, mtimeMs = 0) {
   const body = await fs.readFile(path);
   if (!acceptsGzip || !COMPRESSIBLE.has(ext) || body.length < 1024) {
     return { body, encoding: null };
   }
-  const key = `${path}:${body.length}`;
+  // mtime keeps the cache honest when an edit preserves the byte count.
+  const key = `${path}:${mtimeMs}:${body.length}`;
   let cached = gzipCache.get(key);
   if (!cached) {
     cached = gzipSync(body, { level: 6 });
@@ -56,17 +70,42 @@ async function readFileWithGzip(path, ext, acceptsGzip) {
 }
 
 const server = http.createServer(async (req, res) => {
-  if (req.method !== "GET" && req.method !== "HEAD") {
-    res.writeHead(405, { Allow: "GET, HEAD" });
-    res.end("Method not allowed");
-    return;
-  }
-
   let pathname;
   try {
     pathname = decodeURIComponent(new URL(req.url, `http://${req.headers.host || "localhost"}`).pathname);
   } catch {
     res.writeHead(400).end("Bad request");
+    return;
+  }
+
+  // --- scanner API ---------------------------------------------------------
+  if (pathname === "/api/scan") {
+    if (req.method !== "GET" && req.method !== "HEAD") {
+      res.writeHead(405, { Allow: "GET, HEAD" }).end("Method not allowed");
+      return;
+    }
+    sendJSON(res, 200, { ok: true, ...snapshot() }, { head: req.method === "HEAD" });
+    return;
+  }
+
+  if (pathname === "/api/scan/now") {
+    if (req.method !== "POST") {
+      res.writeHead(405, { Allow: "POST" }).end("Method not allowed");
+      return;
+    }
+    await scanNow("manual");
+    sendJSON(res, 200, { ok: true, ...snapshot() });
+    return;
+  }
+
+  if (pathname.startsWith("/api/")) {
+    sendJSON(res, 404, { ok: false, error: "Unknown endpoint" });
+    return;
+  }
+
+  if (req.method !== "GET" && req.method !== "HEAD") {
+    res.writeHead(405, { Allow: "GET, HEAD" });
+    res.end("Method not allowed");
     return;
   }
 
@@ -113,7 +152,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { ...headers, "Content-Length": stat.size }).end();
       return;
     }
-    const { body, encoding } = await readFileWithGzip(filePath, ext, acceptsGzip);
+    const { body, encoding } = await readFileWithGzip(filePath, ext, acceptsGzip, stat.mtimeMs);
     if (encoding) headers["Content-Encoding"] = encoding;
     headers["Content-Length"] = body.length;
     headers.Vary = "Accept-Encoding";
@@ -128,4 +167,9 @@ const server = http.createServer(async (req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`Bloxd Codex running at http://localhost:${PORT}`);
   console.log(`Serving ${ROOT}`);
+  startScanner();
+  console.log(
+    `Scanning Bloxd files every ${SCAN_CONFIG.intervalMs / 1000}s ` +
+      `(${SCAN_CONFIG.roots.join(", ")}${SCAN_CONFIG.remote ? ` + ${SCAN_CONFIG.urls.length} remote` : ", remote off"})`,
+  );
 });
