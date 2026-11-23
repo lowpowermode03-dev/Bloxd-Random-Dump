@@ -1,6 +1,7 @@
 import { loadEntries, loadMeta, data } from "../data.js";
 import { texHTML } from "../texture.js";
 import { esc, num, bytes, date, dateTime } from "../util.js";
+import { mountScanPanel } from "../monitor.js";
 
 export async function render(root) {
   const [entries, meta] = await Promise.all([loadEntries(), loadMeta()]);
@@ -30,6 +31,8 @@ export async function render(root) {
       </div>
 
       <div class="archive">
+        <section class="panel panel-pad scan-panel" id="scanPanel" aria-live="polite"></section>
+
         <section class="panel panel-pad">
           <p class="kicker">Build snapshot</p>
           <h2 style="font-size:24px;margin:10px 0 6px">Three environments, one archived build.</h2>
@@ -171,7 +174,7 @@ export async function render(root) {
 
           <h3>Known limits</h3>
           <ul>
-            <li>This is a static snapshot, not a live game API. Nothing here updates itself.</li>
+            <li>This is a static snapshot, not a live game API. The registry only changes when a new extraction is built; the monitor above merely watches the files on disk and the Bloxd build ids.</li>
             <li>Mob health, damage and movement stats are not included in this extraction, so the mob pages make no claims about them.</li>
             <li>Some mob variations share a single greyscale sprite and are tinted by the game at runtime.</li>
             <li>Break-time and damage results are arithmetic on registry values; movement, latency, enchantments and multi-piece armour formulas are not modelled.</li>
@@ -192,4 +195,6 @@ export async function render(root) {
         </section>
       </div>
     </div>`;
+
+  mountScanPanel(root.querySelector("#scanPanel"));
 }

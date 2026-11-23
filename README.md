@@ -42,10 +42,39 @@ Any static host works because all paths are relative.
   `vercel.json` already sets the root as output and adds cache headers.
 * **GitHub Pages / Netlify / Cloudflare Pages** — publish the repository root.
 
+## Live Bloxd file monitor
+
+`node serve.mjs` starts a scanner (`scan.mjs`) that sweeps the Bloxd files **every 20
+seconds** and reports what it finds on the Archive page and in the header pill:
+
+* **Local files** — `data/` and `media/` (plus the source zip when it is in the checkout)
+  are fingerprinted by path, size and mtime. Added, modified and removed files are listed
+  on the next sweep.
+* **Remote builds** — the index page of `bloxd.io`, `preprod.bloxd.io` and
+  `staging.bloxd.io` is fetched and the `<build>.main.<hash>.js` bundle name is pulled out
+  of it. Only the HTML is downloaded, never the 3.6 MB game bundle. A change in that build
+  id raises a "new Bloxd build detected" toast.
+* **API** — `GET /api/scan` returns the latest snapshot, `POST /api/scan/now` forces a
+  sweep. The panel also polls every 5 seconds for the countdown.
+
+Tuning, all optional:
+
+```bash
+SCAN_INTERVAL_MS=60000 node serve.mjs     # slower sweeps (5 s–1 h)
+SCAN_REMOTE=0 node serve.mjs              # local files only, no outbound requests
+SCAN_URLS="https://bloxd.io/" node serve.mjs
+SCAN_TIMEOUT_MS=2500 node serve.mjs
+node scan.mjs                             # one sweep, printed as JSON
+```
+
+The scanner needs the long-running `serve.mjs` process. On a static host such as Vercel
+there is no `/api/scan`, and the panel explains that the monitor is dormant while the rest
+of the archive keeps working.
+
 ## Design & brand assets
 
-The site wears Bloxd's own visual language: grass-block greens, hard pixel edges, chunky
-block shadows and a hand-built 19×19 pixel face mark.
+The site wears Bloxd's own visual language: muted grass-block greens, hard pixel edges,
+chunky block shadows and a hand-built 19×19 pixel face mark.
 
 * `assets/bloxd-mark.svg` — the header/footer mark (rounded grass tile + pixel face).
 * `assets/favicon.svg`, `assets/icon-180.png`, `assets/icon-192.png`, `assets/icon-512.png`
@@ -105,13 +134,15 @@ What it produces:
 │       ├── texture.js       pixel-perfect atlas rendering, downloads, lightbox
 │       ├── combo.js         searchable dropdown used by the lab
 │       ├── palette.js       ⌘K command palette
+│       ├── monitor.js       live scan panel + header status
 │       ├── ui.js            overlays, modals, toasts
 │       ├── util.js          formatting, labels, clipboard, misc helpers
 │       └── views/           home, codex, entry, textures, mobs, lab, archive
 ├── data/                    generated datasets (committed)
 ├── media/                   generated atlases and one-off textures (committed)
 ├── tools/build_site.py      zip → site data pipeline
-├── serve.mjs                local static server (+ 404 handling)
+├── serve.mjs                local static server (+ 404 handling, scan API)
+├── scan.mjs                 20-second Bloxd file scanner (local + remote)
 ├── 404.html                 themed not-found page
 ├── manifest.webmanifest     installable web app metadata
 ├── robots.txt

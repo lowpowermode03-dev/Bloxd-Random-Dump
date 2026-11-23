@@ -4,6 +4,7 @@ import { $, $$, closeOverlay, toast } from "./ui.js";
 import { copy } from "./util.js";
 import { loadMeta } from "./data.js";
 import { initPalette, openPalette } from "./palette.js";
+import { startMonitor, onScan } from "./monitor.js";
 
 import * as home from "./views/home.js";
 import * as codex from "./views/codex.js";
@@ -101,6 +102,29 @@ async function render() {
   }
 }
 
+function setupMonitor() {
+  startMonitor();
+  onScan((state) => {
+    const pill = document.querySelector(".snapshot-pill");
+    if (!pill) return;
+    if (state.offline) {
+      pill.dataset.scan = "offline";
+      pill.title = "Live scanner offline — run `node serve.mjs` to scan Bloxd files every 20 seconds";
+      return;
+    }
+    const data = state.data;
+    if (!data) return;
+    const changed = Boolean(data.local?.changed || data.remote?.some((result) => result.changed));
+    pill.dataset.scan = changed ? "changed" : "live";
+    const age = data.lastScanAt
+      ? Math.max(0, Math.round((Date.now() - Date.parse(data.lastScanAt)) / 1000))
+      : null;
+    pill.title = `Bloxd files scanned every ${Math.round((data.intervalMs ?? 20000) / 1000)}s${
+      age === null ? "" : ` · last scan ${age}s ago`
+    }`;
+  });
+}
+
 function setupHeader() {
   const menuBtn = $("#menuBtn");
   const mobileNav = $("#mobileNav");
@@ -149,6 +173,7 @@ function setupDelegates() {
 function boot() {
   initPalette();
   setupHeader();
+  setupMonitor();
   setupDelegates();
   loadMeta().catch((error) => console.warn("meta failed", error));
   window.addEventListener("hashchange", render);
