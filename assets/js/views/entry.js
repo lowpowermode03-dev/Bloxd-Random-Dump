@@ -1,6 +1,6 @@
 import { loadEntries, loadMeta, loadDetail, data, family } from "../data.js";
 import { texHTML, downloadTile } from "../texture.js";
-import { esc, num, ms, label, formatValue, date } from "../util.js";
+import { esc, num, ms, label, formatValue, date, nameHTML } from "../util.js";
 
 const GROUPS = [
   {
@@ -99,7 +99,7 @@ export async function render(root, ctx) {
         <div class="entry-art">${texHTML(compact.t, 172)}</div>
         <div class="entry-info">
           <p class="kicker">${esc(kindLabel)} · registry #${compact.i}</p>
-          <h1 class="entry-title">${esc(compact.n)}</h1>
+          <h1 class="entry-title">${nameHTML(compact.n)}</h1>
           ${description ? `<p class="entry-desc">${esc(description)}</p>` : ""}
           <div class="entry-badges">${badges.join("")}</div>
           <div class="entry-actions">

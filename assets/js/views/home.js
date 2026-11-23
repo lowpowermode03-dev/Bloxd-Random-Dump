@@ -16,7 +16,7 @@ const SHELF_SAMPLES = {
   building: (entry) => entry.k === "b" && !entry.var && (entry.ht === "rock" || entry.ht === "wood"),
 };
 const POPULAR = ["Diamond Sword", "Torch", "Iron Ore", "Grass Block", "Wood Pickaxe"];
-const SPECIMENS = ["Diamond Pickaxe", "Torch", "Grass Block", "Diamond Sword"];
+const SPECIMENS = ["Diamond Pickaxe", "Torch", "Iron Ore", "Diamond Sword"];
 
 export async function render(root, ctx) {
   const [entries, meta] = await Promise.all([loadEntries(), loadMeta()]);
@@ -98,11 +98,21 @@ export async function render(root, ctx) {
         </div>
         <div class="hero-art" aria-hidden="true">
           <span class="ring"></span><span class="ring two"></span>
+          <div class="cube-stage">
+            <div class="cube">
+              <span class="cube-face top"></span>
+              <span class="cube-face front"></span>
+              <span class="cube-face right"></span>
+              <span class="cube-face back"></span>
+              <span class="cube-face left"></span>
+              <span class="cube-face bottom"></span>
+            </div>
+          </div>
           ${specimens
             .map(
               (entry, index) => `
-            <div class="specimen" style="--x:${[12, 60, 4, 52][index]}%;--y:${[2, 22, 62, 74][index]}%;animation-delay:${index * 1.3}s;left:var(--x);top:var(--y)">
-              ${texHTML(entry.t, 58)}
+            <div class="specimen" style="--x:${[0, 70, 1, 66][index]}%;--y:${[1, 9, 63, 64][index]}%;animation-delay:${index * 1.3}s;left:var(--x);top:var(--y)">
+              ${texHTML(entry.t, 46)}
               <b>${esc(entry.n.split("|")[0])}</b>
               <small>#${entry.i}</small>
             </div>`,

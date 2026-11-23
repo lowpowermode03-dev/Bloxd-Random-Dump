@@ -6,6 +6,17 @@ export const $$ = (selector, root = document) => [...root.querySelectorAll(selec
 const ESCAPES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
 export const esc = (value) => String(value ?? "").replace(/[&<>"']/g, (c) => ESCAPES[c]);
 
+/**
+ * Render a registry name, dimming the `|meta|…` variant suffix so a row reads
+ * "Grass Slab · rot1|top" instead of one long undifferentiated string.
+ */
+export function nameHTML(name) {
+  const text = String(name ?? "");
+  const [base, ...rest] = text.split("|").filter((part, index) => index === 0 || part !== "meta");
+  if (!rest.length) return esc(base);
+  return `${esc(base)}<span class="name-suffix">${esc(rest.join("|"))}</span>`;
+}
+
 const numberFormat = new Intl.NumberFormat("en-US");
 export const num = (value) => numberFormat.format(value);
 

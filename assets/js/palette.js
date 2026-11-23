@@ -3,7 +3,7 @@
 import { data, loadEntries, searchEntries } from "./data.js";
 import { texHTML } from "./texture.js";
 import { $, openOverlay, closeOverlay } from "./ui.js";
-import { esc } from "./util.js";
+import { esc, nameHTML } from "./util.js";
 
 const PAGES = [
   ["Codex", "Browse all entries", "#/codex"],
@@ -100,7 +100,7 @@ function update(query) {
         return `<button class="presult ${index === 0 ? "active" : ""}" data-id="${entry.i}">
           ${texHTML(entry.t, size, { cls: "thumb" })}
           <span class="p-body">
-            <span class="p-name">${esc(entry.n)}</span>
+            <span class="p-name" title="${esc(entry.n)}">${nameHTML(entry.n)}</span>
             <span class="p-sub">${kind} · #${entry.i}${entry.ht ? ` · ${esc(entry.ht)}` : ""}${entry.dmg ? ` · ${entry.dmg} dmg` : ""}</span>
           </span>
           <span class="p-go">↵</span>
