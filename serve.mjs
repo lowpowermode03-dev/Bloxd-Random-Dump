@@ -30,7 +30,12 @@ const MIME = {
   ".ico": "image/x-icon",
   ".webp": "image/webp",
   ".txt": "text/plain; charset=utf-8",
+  ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".woff2": "font/woff2",
+  ".woff": "font/woff",
 };
+
+const FONT_EXT = new Set([".woff2", ".woff"]);
 
 const COMPRESSIBLE = new Set([".html", ".js", ".mjs", ".css", ".json", ".md", ".svg", ".txt"]);
 const gzipCache = new Map();
@@ -84,16 +89,15 @@ const server = http.createServer(async (req, res) => {
     stat = null;
   }
 
-  // Hash-router fallback for clean deep links like /codex
+  // Everything is hash-routed, so an unknown path is a real 404.
   if (!stat) {
-    if (!extname(pathname)) {
-      filePath = join(ROOT, "index.html");
-      stat = await fs.stat(filePath).catch(() => null);
-    }
-    if (!stat) {
+    const notFound = await fs.readFile(join(ROOT, "404.html")).catch(() => null);
+    if (notFound) {
+      res.writeHead(404, { "Content-Type": MIME[".html"], "Content-Length": notFound.length }).end(notFound);
+    } else {
       res.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" }).end("Not found");
-      return;
     }
+    return;
   }
 
   const ext = extname(filePath).toLowerCase();
@@ -101,7 +105,7 @@ const server = http.createServer(async (req, res) => {
   const headers = {
     "Content-Type": MIME[ext] || "application/octet-stream",
     "X-Content-Type-Options": "nosniff",
-    "Cache-Control": ext === ".png" ? "public, max-age=86400" : "public, max-age=60",
+    "Cache-Control": ext === ".png" || FONT_EXT.has(ext) ? "public, max-age=604800" : "public, max-age=60",
   };
 
   try {

@@ -31,8 +31,8 @@ python3 -m http.server 8000
 ```
 
 Serve the folder over HTTP — opening `index.html` with a `file://` URL will block the JSON
-and texture fetches. `serve.mjs` is a zero-dependency static server with gzip and deep-link
-fallback; `PORT=3000 node serve.mjs` changes the port.
+and texture fetches. `serve.mjs` is a zero-dependency static server with gzip, correct font
+and manifest MIME types, and a themed 404 page; `PORT=3000 node serve.mjs` changes the port.
 
 ## Deploy
 
@@ -41,6 +41,25 @@ Any static host works because all paths are relative.
 * **Vercel** — import the repository, leave the framework as *Other*, build command empty.
   `vercel.json` already sets the root as output and adds cache headers.
 * **GitHub Pages / Netlify / Cloudflare Pages** — publish the repository root.
+
+## Design & brand assets
+
+The site wears Bloxd's own visual language: grass-block greens, hard pixel edges, chunky
+block shadows and a hand-built 19×19 pixel face mark.
+
+* `assets/bloxd-mark.svg` — the header/footer mark (rounded grass tile + pixel face).
+* `assets/favicon.svg`, `assets/icon-180.png`, `assets/icon-192.png`, `assets/icon-512.png`
+  — favicon, Apple touch icon and PWA icons, all generated from the same grid.
+* `assets/og.png` — 1200×630 social card.
+* `assets/blocks/*.png` — the in-game grass and dirt textures (upscaled ×4, nearest neighbour)
+  used for the floating hero block and footer texture.
+* `assets/fonts/*.woff2` — self-hosted Space Grotesk and Silkscreen, so the site makes no
+  third-party requests at runtime.
+* `manifest.webmanifest`, `robots.txt`, `404.html` — installability, crawler hints and a
+  themed not-found page.
+
+The mark is an original SVG reconstruction of Bloxd's pixel avatar, used here for an
+unofficial fan project. Bloxd's name and logo remain the property of Bloxd.
 
 ## Rebuilding the datasets
 
@@ -73,8 +92,13 @@ What it produces:
 .
 ├── index.html               app shell (header, footer, palette, lightbox, modal)
 ├── assets/
-│   ├── site.css             design system + every component
-│   ├── favicon.svg
+│   ├── site.css             design system + every component + Bloxd theme layer
+│   ├── bloxd-mark.svg       site logo (grass tile + pixel face)
+│   ├── favicon.svg          favicon
+│   ├── icon-*.png           Apple touch / PWA icons
+│   ├── og.png               social card
+│   ├── blocks/              grass + dirt tiles used by the hero cube
+│   ├── fonts/               self-hosted Space Grotesk + Silkscreen
 │   └── js/
 │       ├── main.js          router, header behaviour, global shortcuts
 │       ├── data.js          data loading, categories, search, sorting
@@ -87,7 +111,10 @@ What it produces:
 ├── data/                    generated datasets (committed)
 ├── media/                   generated atlases and one-off textures (committed)
 ├── tools/build_site.py      zip → site data pipeline
-├── serve.mjs                local static server
+├── serve.mjs                local static server (+ 404 handling)
+├── 404.html                 themed not-found page
+├── manifest.webmanifest     installable web app metadata
+├── robots.txt
 ├── vercel.json
 └── Bloxd-Developer-Hub 9.zip  the archived research snapshot
 ```

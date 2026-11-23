@@ -11,7 +11,7 @@ import {
   HARVEST_LEVEL_LABELS,
 } from "../data.js";
 import { texHTML } from "../texture.js";
-import { esc, num, ms, debounce } from "../util.js";
+import { esc, num, ms, debounce, nameHTML } from "../util.js";
 
 const PAGE = 72;
 const KINDS = [["all", "All"], ["b", "Blocks"], ["i", "Items"]];
@@ -165,7 +165,7 @@ export async function render(root, ctx) {
       <a class="entry-card" href="#/entry/${entry.i}">
         ${texHTML(entry.t, 42)}
         <span class="entry-card-body">
-          <span class="entry-name" title="${esc(entry.n)}">${esc(entry.n)}</span>
+          <span class="entry-name" title="${esc(entry.n)}">${nameHTML(entry.n)}</span>
           <span class="entry-sub">
             <span>${esc(kind)}</span>
             ${entry.ht ? `<i class="dot"></i><span>${esc(entry.ht)}</span>` : ""}
